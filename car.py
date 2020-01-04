@@ -31,7 +31,7 @@ class Car:
     # For debugging
     # print(car) is ok now
     def __str__(self):
-        return "index: %s   arrival_time: %s   status: %s  action: %s   waiting_time: %s" % \
+        return "car index: %s   arrival_time: %s   status: %s  action: %s   waiting_time: %s" % \
                 (self.index, self.arrival_time, self.status, self.action, self.waiting_time)
     
 
