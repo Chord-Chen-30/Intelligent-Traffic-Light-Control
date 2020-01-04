@@ -1,20 +1,8 @@
 from car import Car
 from car import status
 from intersectionAgent import IntersectionAgent
+from util import generate_cars
 
-
-# mode 0 generate cars for training
-# mode 1 generate cars for testing
-def generate_cars(mode=0):
-    """ YOUR CODE HERE"""
-    
-    # Generate list of cars (Read from file?)
-    # Then
-    # return list_of_cars
-    c = Car(0, 5, status.WAITING, 'left', 'South', 0)
-    car_list=[]
-    car_list.append(c)
-    return car_list
 
 
 def main():

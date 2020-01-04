@@ -9,13 +9,13 @@ class status(Enum):
 class Car:
     
     # STATUS should be status.WAITING or status.EXIT
-    def __init__(self, index, arrival_time, status, action, coming_direction, waiting_time=0):
+    def __init__(self, index, arrival_time, coming_direction, action, status, waiting_time=0):
         self.index = index # For debug maybe
-        self.arrival_time = arrival_time
+        self.arrival_time = int(arrival_time)
         self.coming_direction = coming_direction
         self.action = action
         self.status = status
-        self.waiting_time = waiting_time
+        self.waiting_time = int(waiting_time)
 
     # Increase waiting time by TIME
     def increase_waiting_time(self, time):
