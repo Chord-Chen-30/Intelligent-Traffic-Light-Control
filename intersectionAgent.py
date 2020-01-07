@@ -3,22 +3,136 @@ from car import status
 import copy
 import random
 
-class IntersectionAgent(State):
+
+class State:
+    def __init__(self):
+    	self.waiting_car_list_straight_ns = [[],[]]
+        self.waiting_car_list_straight_ew = [[],[]]
+        self.waiting_car_list_left_ns = [[],[]]
+        self.waiting_car_list_left_ew = [[],[]]
+    	self.longest_waiting = 0;
+
+        self.passed_car_list = []
+
+    def update_intersection_state(self, action):  
+
+        # Pcik first self.CARS_CAN_PASS cars in corresponding waiting list and kick them out
+        # add them into passed_car_list and mark car.status as status.EXIT
+        if action == 'straight_ns':
+            passed_cars = 0
+            while  passed_cars < self.CARS_CAN_PASS:
+            	if (len(self.waiting_car_list_straight_ns[0]) != 0):
+                	car = self.waiting_car_list_straight_ns[0].pop(0)
+	                car.status = status.EXIT
+	                self.passed_car_list.append(car)
+	                passed_cars += 1
+            	if (len(self.waiting_car_list_straight_ns[1]) != 0):
+                	car = self.waiting_car_list_straight_ns[1].pop(0)
+	                car.status = status.EXIT
+	                self.passed_car_list.append(car)
+               	 	passed_cars += 1
+
+        elif action == 'straight_ew':
+            passed_cars = 0
+            while  passed_cars < self.CARS_CAN_PASS:
+            	if (len(self.waiting_car_list_straight_ew[0]) != 0):
+                	car = self.waiting_car_list_straight_ew[0].pop(0)
+	                car.status = status.EXIT
+	                self.passed_car_list.append(car)
+	                passed_cars += 1
+            	if (len(self.waiting_car_list_straight_ew[1]) != 0):
+                	car = self.waiting_car_list_straight_ew[1].pop(0)
+	                car.status = status.EXIT
+	                self.passed_car_list.append(car)
+               	 	passed_cars += 1
+        elif action == 'left_ns':
+            passed_cars = 0
+            while  passed_cars < self.CARS_CAN_PASS:
+            	if (len(self.waiting_car_list_left_ns[0]) != 0):
+                	car = self.waiting_car_list_left_ns[0].pop(0)
+	                car.status = status.EXIT
+	                self.passed_car_list.append(car)
+	                passed_cars += 1
+            	if (len(self.waiting_car_list_left_ns[1]) != 0):
+                	car = self.waiting_car_list_left_ns[1].pop(0)
+	                car.status = status.EXIT
+	                self.passed_car_list.append(car)
+               	 	passed_cars += 1
+        elif action == 'left_ew':
+            passed_cars = 0
+            while  passed_cars < self.CARS_CAN_PASS:
+            	if (len(self.waiting_car_list_left_ew[0]) != 0):
+                	car = self.waiting_car_list_left_ew[0].pop(0)
+	                car.status = status.EXIT
+	                self.passed_car_list.append(car)
+	                passed_cars += 1
+            	if (len(self.waiting_car_list_left_ew[1]) != 0):
+                	car = self.waiting_car_list_left_ew[1].pop(0)
+	                car.status = status.EXIT
+	                self.passed_car_list.append(car)
+               	 	passed_cars += 1
+        else:
+            print("!?")
+        # Second select cars from waiting list -> passed car list 
+        # and mark them.status as status.EXIT
+        
+        # Might be useful, return how many cars passed after action ACTION
+        return passed_cars
+    
+    #
+	def state_copy(self):
+		state_cp =  State();
+		state_cp.waiting_car_list_straight_ns[0] = self.waiting_car_list_straight_ns[0][:];
+		state_cp.waiting_car_list_straight_ns[1] = self.waiting_car_list_straight_ns[1][:];
+		state_cp.waiting_car_list_straight_ew[0] = self.waiting_car_list_straight_ew[0][:];
+		state_cp.waiting_car_list_straight_ew[1] = self.waiting_car_list_straight_ew[1][:];
+		state_cp.waiting_car_list_left_ew[0] = self.waiting_car_list_left_ew[0][:];
+		state_cp.waiting_car_list_left_ew[1] = self.waiting_car_list_left_ew[1][:];
+		state_cp.waiting_car_list_left_ns[0] = self.waiting_car_list_left_ns[0][:];
+		state_cp.waiting_car_list_left_ns[1] = self.waiting_car_list_left_ns[1][:];
+		state_cp.longest_waiting = self.longest_waiting;
+		return state_cp;
+    
+
+    # Add one car to waiting list of this intersection
+    def add_car_to_waiting_list(self, car):
+
+        # Car that go straight
+        if car.action == 'straight':
+            if car.comming_direction == 'north':
+                self.waiting_car_list_straight_ns[0].append(car)
+            elif car.comming_direction == 'south':
+                self.waiting_car_list_straight_ns[1].append(car)
+            elif car.comming_direction == 'east':
+                self.waiting_car_list_straight_ew[0].append(car)
+            elif car.comming_direction == 'west':
+                self.waiting_car_list_straight_ew[1].append(car)
+        
+        # Car that turn left
+        elif car.action == 'left':
+            if car.comming_direction == 'north':
+                self.waiting_car_list_left_ns[0].append(car) 
+            elif car.comming_direction == 'south':
+                self.waiting_car_list_left_ns[1].append(car)
+            elif car.comming_direction == 'east':
+                self.waiting_car_list_left_ew[0].append(car)
+            elif car.comming_direction == 'west':
+                self.waiting_car_list_left_ew[1].append(car)
+    
+
+class IntersectionAgent:
     def __init__(self, list_of_cars):
 
         self.__time = 0 # Simulate the real time
         self.TIME_INTERVAL = 20
         self.CARS_CAN_PASS = 10
         self.epsilon = 0.5 # How much probability we choose to take a random action
-        self.__light_states = {'straight_ns':[], \
-                               'straight_ew':[], \
-                               'left_ns':[], \
-                               'left_ew':[] }
+        self.__light_states = ['straight_ns','straight_ew','left_ns','left_ew']
 
-        self.cur_light_state = 'straight_ns'
+        self.cur_light_state = 'straight_ns' # For example
         self.buffer_car_list = copy.deepcopy(list_of_cars) # Cars that have not reached intersecion (yet) but generated by test case, store here for now
 
-        self.passed_car_list = [] # Maybe we need 1
+        self.state = State()
 
 
         # Features should be fixed at the beginning
@@ -33,29 +147,8 @@ class IntersectionAgent(State):
 
     """============Basic functions============"""
 
-    # Add one car to waiting list of this intersection
-    def add_car_to_waiting_list(self, car):
-        # north south straight
-        if ((car.comming_direction == 'north' or car.comming_direction == 'south') and car.action == 'straight'):
-            self.waiting_car_list_straight_ns.append(car)
-
-        # east west straight
-        elif ((car.comming_direction == 'east' or car.comming_direction == 'west') and car.action == 'straight'):
-            self.waiting_car_list_straight_ew.append(car)
-
-        # north south left
-        elif ((car.comming_direction == 'north' or car.comming_direction == 'south') and car.action == 'left'):
-            self.waiting_car_list_left_ns.append(car)
-
-        # east west left
-        elif ((car.comming_direction == 'east' or car.comming_direction == 'west') and car.action == 'left'):
-            self.waiting_car_list_left_ew.append(car)
-        else:
-            print("???!!!")
-
-
     def get_legal_action(self):
-        return ['straight_ns','straight_ew','left_ns','left_ew']
+        return self.__light_states
 
     # Update all cars' status after ?? seconds passed
     # Include their status and waiting time
@@ -67,7 +160,7 @@ class IntersectionAgent(State):
             if car.arrival_time < self.__time: # This car should be waiting at the intersection
                 inds_to_be_popped_from_buffer.append(i)
 
-                self.add_car_to_waiting_list(car)
+                self.state.add_car_to_waiting_list(car)
 
                 car.status = status.WAITING
                 car.waiting_time += car.arrival_time - self.__time
@@ -78,47 +171,10 @@ class IntersectionAgent(State):
 
         # Pcik first self.CARS_CAN_PASS cars in corresponding waiting list and kick them out
         # add them into passed_car_list and mark car.status as status.EXIT
-        if action == 'straight_ns':
-            passed_cars = 0
-            while self.waiting_car_list_straight_ns != [] and passed_cars < self.CARS_CAN_PASS:
-                car = self.waiting_car_list_straight_ns.pop(0)
-                car.status = status.EXIT
-                self.passed_car_list.append(car)
-                passed_cars += 1
+        # Select cars from waiting list -> passed car list 
+        self.state.update_intersection_state(action)
 
-        elif action == 'straight_ew':
-            passed_cars = 0
-            while self.waiting_car_list_straight_ew != [] and passed_cars < self.CARS_CAN_PASS:
-                car = self.waiting_car_list_straight_ew.pop(0)
-                car.status = status.EXIT
-                self.passed_car_list.append(car)
-                passed_cars += 1
-
-        elif action == 'left_ns':
-            passed_cars = 0
-            while self.waiting_car_list_left_ns != [] and passed_cars < self.CARS_CAN_PASS:
-                car = self.waiting_car_list_left_ns.pop(0)
-                car.status = status.EXIT
-                self.passed_car_list.append(car)
-                passed_cars += 1
-
-        elif action == 'left_ew':
-            passed_cars = 0
-            while self.waiting_car_list_left_ew != [] and passed_cars < self.CARS_CAN_PASS:
-                car = self.waiting_car_list_left_ew.pop(0)
-                car.status = status.EXIT
-                self.passed_car_list.append(car)
-                passed_cars += 1
-
-        else:
-            print("!?")
-        # Second select cars from waiting list -> passed car list 
-        # and mark them.status as status.EXIT
-        
-        # Might be useful, return how many cars passed after action ACTION
-        return passed_cars
     
-    # 
     def time_elapse(self):
         self.__time += self.TIME_INTERVAL
 
@@ -230,90 +286,3 @@ class IntersectionAgent(State):
         # And calculate the total waiting time (or sth. else we use to evaluate our model)
         pass
 
-class State:
-    def __init__(self):
-    	self.waiting_car_list_straight_ns = [[],[]]
-        self.waiting_car_list_straight_ew = [[],[]]
-        self.waiting_car_list_left_ns = [[],[]]
-        self.waiting_car_list_left_ew = [[],[]]
-    	self.longest_waiting = 0;
-
-    def update_intersection_state(self, action):  
-
-
-        # Pcik first self.CARS_CAN_PASS cars in corresponding waiting list and kick them out
-        # add them into passed_car_list and mark car.status as status.EXIT
-        if action == 'straight_ns':
-            passed_cars = 0
-            while  passed_cars < self.CARS_CAN_PASS:
-            	if (len(self.waiting_car_list_straight_ns[0]) != 0):
-                	car = self.waiting_car_list_straight_ns[0].pop(0)
-	                car.status = status.EXIT
-	                self.passed_car_list.append(car)
-	                passed_cars += 1
-            	if (len(self.waiting_car_list_straight_ns[1]) != 0):
-                	car = self.waiting_car_list_straight_ns[1].pop(0)
-	                car.status = status.EXIT
-	                self.passed_car_list.append(car)
-               	 	passed_cars += 1
-
-        elif action == 'straight_ew':
-            passed_cars = 0
-            while  passed_cars < self.CARS_CAN_PASS:
-            	if (len(self.waiting_car_list_straight_ew[0]) != 0):
-                	car = self.waiting_car_list_straight_ew[0].pop(0)
-	                car.status = status.EXIT
-	                self.passed_car_list.append(car)
-	                passed_cars += 1
-            	if (len(self.waiting_car_list_straight_ew[1]) != 0):
-                	car = self.waiting_car_list_straight_ew[1].pop(0)
-	                car.status = status.EXIT
-	                self.passed_car_list.append(car)
-               	 	passed_cars += 1
-        elif action == 'left_ns':
-            passed_cars = 0
-            while  passed_cars < self.CARS_CAN_PASS:
-            	if (len(self.waiting_car_list_left_ns[0]) != 0):
-                	car = self.waiting_car_list_left_ns[0].pop(0)
-	                car.status = status.EXIT
-	                self.passed_car_list.append(car)
-	                passed_cars += 1
-            	if (len(self.waiting_car_list_left_ns[1]) != 0):
-                	car = self.waiting_car_list_left_ns[1].pop(0)
-	                car.status = status.EXIT
-	                self.passed_car_list.append(car)
-               	 	passed_cars += 1
-        elif action == 'left_ew':
-            passed_cars = 0
-            while  passed_cars < self.CARS_CAN_PASS:
-            	if (len(self.waiting_car_list_left_ew[0]) != 0):
-                	car = self.waiting_car_list_left_ew[0].pop(0)
-	                car.status = status.EXIT
-	                self.passed_car_list.append(car)
-	                passed_cars += 1
-            	if (len(self.waiting_car_list_left_ew[1]) != 0):
-                	car = self.waiting_car_list_left_ew[1].pop(0)
-	                car.status = status.EXIT
-	                self.passed_car_list.append(car)
-               	 	passed_cars += 1
-        else:
-            print("!?")
-        # Second select cars from waiting list -> passed car list 
-        # and mark them.status as status.EXIT
-        
-        # Might be useful, return how many cars passed after action ACTION
-        return passed_cars
-    
-    #
-	def state_copy(self):
-		state_cp =  State();
-		state_cp.waiting_car_list_straight_ns[0] = self.waiting_car_list_straight_ns[0][:];
-		state_cp.waiting_car_list_straight_ns[1] = self.waiting_car_list_straight_ns[1][:];
-		state_cp.waiting_car_list_straight_ew[0] = self.waiting_car_list_straight_ew[0][:];
-		state_cp.waiting_car_list_straight_ew[1] = self.waiting_car_list_straight_ew[1][:];
-		state_cp.waiting_car_list_left_ew[0] = self.waiting_car_list_left_ew[0][:];
-		state_cp.waiting_car_list_left_ew[1] = self.waiting_car_list_left_ew[1][:];
-		state_cp.waiting_car_list_left_ns[0] = self.waiting_car_list_left_ns[0][:];
-		state_cp.waiting_car_list_left_ns[1] = self.waiting_car_list_left_ns[1][:];
-		state_cp.longest_waiting = self.longest_waiting;
-		return state_cp;
