@@ -40,7 +40,7 @@ def generate_cars(mode=0):
 
 
         # Read
-        book = xlrd.open_workbook('cars.xls')
+        book = xlrd.open_workbook('cars3.xls')
         sheet1 = book.sheets()[0]
 
         nrows = sheet1.nrows

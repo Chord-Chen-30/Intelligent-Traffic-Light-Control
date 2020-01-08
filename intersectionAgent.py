@@ -192,8 +192,7 @@ class State:
         return {'straight_ns':straight_ns, \
                 'straight_ew':straight_ew, \
                 'left_ns':    left_ns, \
-                'left_ew':    left_ew,
-                }
+                'left_ew':    left_ew}
 
 class IntersectionAgent:
     def __init__(self, list_of_cars):
@@ -315,22 +314,18 @@ class IntersectionAgent:
 
     def reward(self, state, action):
 
-        if action == 'straight_ns':
-            max_lane = max(len(state.waiting_car_list_straight_ns[0]), len(state.waiting_car_list_straight_ns[1]))
-        elif action == 'straight_ew':
-            max_lane = max(len(state.waiting_car_list_straight_ew[0]), len(state.waiting_car_list_straight_ew[1]))
-        elif action == 'left_ns':
-            max_lane = max(len(state.waiting_car_list_left_ns[0]), len(state.waiting_car_list_left_ns[1]))
-        elif action == 'left_ew':
-            max_lane = max(len(state.waiting_car_list_left_ew[0]), len(state.waiting_car_list_left_ew[1]))
 
         next_state = self.state.state_copy()
 
         cars_passed, temp_pass_car_list = next_state.update_intersection_state(action,self.__time)
         next_state.update_time(self.__time + self.TIME_INTERVAL)
         feature = next_state.extract_features(action)
-
-        reward = max_lane * cars_passed 
+        max_lane_1 = len(next_state.waiting_car_list_straight_ns[0])+ len(next_state.waiting_car_list_straight_ns[1])
+        max_lane_2 = len(next_state.waiting_car_list_straight_ew[0])+ len(next_state.waiting_car_list_straight_ew[1])
+        max_lane_3 = len(next_state.waiting_car_list_left_ns[0])+ len(next_state.waiting_car_list_left_ns[1])
+        max_lane_4 = len(next_state.waiting_car_list_left_ew[0])+ len(next_state.waiting_car_list_left_ew[1])
+        max_lane = max (max_lane_1,max_lane_2,max_lane_3,max_lane_4)
+        reward = - max_lane * cars_passed 
         return (reward, next_state)
 
 
@@ -341,7 +336,7 @@ class IntersectionAgent:
         # Calculate the difference 
         diff = reward + self.discount * self.get_value(next_state) - self.get_qvalue(state, action)
         # Update our weights
-        sum_weight = 1
+        sum_weight = -1
         for f in features:
             self.weights[f] += self.alpha*diff*features[f]
             sum_weight += self.weights[f]
@@ -374,15 +369,18 @@ class IntersectionAgent:
 
     def test(self, test_cars):
         self.epsilon = 0
-        self.buffer_car_list = test_cars
+        self.__time = 0
+        self.buffer_car_list = copy.deepcopy(test_cars)
         self.passed_car_list = []
+        print(self.weights)
         while (not self.all_cars_passed()) or (self.buffer_car_list != []):
             
             print("time : ",self.__time)
-
             action = self.get_action(self.state)
             print(action)
             self.update_state(action)
+
+
 
         total_waiting_time = 0
         cars_passed = len(self.passed_car_list)
@@ -390,23 +388,26 @@ class IntersectionAgent:
             total_waiting_time += car.waiting_time
 
         avg_waiting_time = float(total_waiting_time / cars_passed)
-        print(cars_passed)
+
         print("Our model: avg wait time: ", avg_waiting_time)
+        # write_to_excel(self.passed_car_list)
         # return avg_waiting_time
     
     # Return average time using a period traffic light scheme
     def stupid_ai(self, test_cars):
+        print("stupid_AI")
         period_action = 0
-        self.buffer_car_list = test_cars
+        self.__time = 0
+        self.buffer_car_list = copy.deepcopy(test_cars)
+        print("len(buffer) = ",len(self.buffer_car_list))
         self.passed_car_list = []
-        while not (self.all_cars_passed() or (not self.buffer_car_list == [])):
-            self.__time += self.TIME_INTERVAL
+        while ((not self.all_cars_passed()) or (not self.buffer_car_list == [])):
             action = self.get_legal_action()[period_action]
             self.update_state(action)
 
             period_action += 1
             if period_action == 4:
-                period_action == 0
+                period_action = 0
 
         total_waiting_time = 0
         cars_passed = len(self.passed_car_list)
@@ -417,3 +418,24 @@ class IntersectionAgent:
         print("Stupid: avg wait time: ", avg_waiting_time)
         # return avg_waiting_time
 
+def write_to_excel(passed_car_list):
+    import xlwt
+
+    workbook = xlwt.Workbook(encoding='utf-8')       #新建工作簿
+    sheet1 = workbook.add_sheet("passed_cars")    #新建sheet
+
+
+    sheet1.write(0,0,"car index")      #第1行第1列数据
+    sheet1.write(0,1,"arrival_time")      #第1行第2列数据
+    sheet1.write(0,2,"action")      #第1行第3列数据
+    sheet1.write(0,3,"comming_direction")      #第1行第4列数据
+    sheet1.write(0,4,"waiting_time")      #第1行第5列数据
+
+    for car in passed_car_list:
+        sheet1.write(car.index+1,0,str(car.index+1))      #第2行第1列数据 index
+        sheet1.write(car.index+1,1,str(car.arrival_time))      #第2行第2列数据 arrval time
+        sheet1.write(car.index+1,2,str(car.comming_direction))      #第2行第3列数据  coming direction
+        sheet1.write(car.index+1,3,car.action)      #第2行第4列数据  action
+        sheet1.write(car.index+1,4,str(car.waiting_time))      #第2行第6列数据  waiting time
+
+    workbook.save('passed_cars.xls') #保存
