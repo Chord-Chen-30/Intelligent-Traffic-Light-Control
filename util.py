@@ -40,7 +40,8 @@ def generate_cars(mode=0):
 
 
         # Read
-        book = xlrd.open_workbook('cars2.xls')
+        book = xlrd.open_workbook('cars_new_one.xls')
+
         sheet1 = book.sheets()[0]
 
         nrows = sheet1.nrows
@@ -67,4 +68,27 @@ def generate_cars(mode=0):
 
 
     elif mode == 1:
-        pass
+        book = xlrd.open_workbook('cars_new.xls')
+
+        sheet1 = book.sheets()[0]
+
+        nrows = sheet1.nrows
+        print("rows",nrows)
+        for i in range(1,nrows):
+
+            index = sheet1.cell(i,0).value
+            arrival_time = sheet1.cell(i,1).value
+            coming_direction = sheet1.cell(i,2).value
+            action = sheet1.cell(i,3).value
+            # status = sheet1.cell(i,4).value
+            waiting_time = sheet1.cell(i,5).value
+        
+            status = Status.WAITING
+        
+            c = Car(int(index), int(arrival_time), coming_direction, action, status ,int(waiting_time))
+        
+            car_list.append(c)
+
+        # print(car_list)
+
+        return car_list

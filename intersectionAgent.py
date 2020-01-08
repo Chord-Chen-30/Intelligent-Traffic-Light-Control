@@ -3,7 +3,8 @@ from car import Status
 import copy
 import random
 
-CARS_CAN_PASS = 10
+STRAIGHT_CARS_CAN_PASS = 25
+LEFT_CARS_CAN_PASS = 10
 class State:
     def __init__(self):
         self.waiting_car_list_straight_ns = [[],[]]
@@ -23,7 +24,7 @@ class State:
         self.__time = cur_time
         if action == 'straight_ns':
             passed_cars = 0
-            for i in range(0,CARS_CAN_PASS):
+            for i in range(0,STRAIGHT_CARS_CAN_PASS):
                 if (len(self.waiting_car_list_straight_ns[0]) != 0):
                     car = self.waiting_car_list_straight_ns[0].pop(0)
                     car.get_waiting_time(cur_time)
@@ -39,7 +40,7 @@ class State:
 
         elif action == 'straight_ew':
             passed_cars = 0
-            for i in range(0,CARS_CAN_PASS):
+            for i in range(0,STRAIGHT_CARS_CAN_PASS):
                 if (len(self.waiting_car_list_straight_ew[0]) != 0):
                     car = self.waiting_car_list_straight_ew[0].pop(0)
                     car.status = Status.EXIT
@@ -55,7 +56,7 @@ class State:
 
         elif action == 'left_ns':
             passed_cars = 0
-            for i in range(0,CARS_CAN_PASS):
+            for i in range(0,LEFT_CARS_CAN_PASS):
                 if (len(self.waiting_car_list_left_ns[0]) != 0):
                     car = self.waiting_car_list_left_ns[0].pop(0)
                     car.status = Status.EXIT
@@ -71,7 +72,7 @@ class State:
 
         elif action == 'left_ew':
             passed_cars = 0
-            for i in range(0,CARS_CAN_PASS):
+            for i in range(0,LEFT_CARS_CAN_PASS):
                 if (len(self.waiting_car_list_left_ew[0]) != 0):
                     car = self.waiting_car_list_left_ew[0].pop(0)
                     car.status = Status.EXIT
@@ -199,8 +200,9 @@ class IntersectionAgent:
     def __init__(self, list_of_cars):
 
         self.__time = 0 # Simulate the real time
-        self.TIME_INTERVAL = 20
-        
+        self.STRAIGHT_TIME_INTERVAL = 30
+        self.LEFT_TIME_INTERVAL = 15
+
         self.__light_states = ['straight_ns','straight_ew','left_ns','left_ew']
 
         self.cur_light_state = 'straight_ns' # For example
@@ -260,10 +262,7 @@ class IntersectionAgent:
         for a in lights_choices:
             qvalue = self.get_qvalue(state, a)
             # print("in compute action from qvalue: action:", a, "qvalue: ", qvalue)
-            if qvalue == highest_qvalue:
-                action = random.choice([action, a])
-
-            elif qvalue < highest_qvalue:
+            if qvalue < highest_qvalue:
                 action = a
                 highest_qvalue = qvalue
 
@@ -289,7 +288,10 @@ class IntersectionAgent:
 
         next_state = state.state_copy()
         next_state.update_intersection_state(action,self.__time)
-        next_state.update_time(self.__time + self.TIME_INTERVAL)
+        if action == 'straight_ns' or action == 'straight_ew':
+            next_state.update_time(self.__time + self.STRAIGHT_TIME_INTERVAL)
+        else:
+            next_state.update_time(self.__time + self.LEFT_TIME_INTERVAL)
         features = next_state.extract_features(action)
         qvalue = 0
         # Implement dot product
@@ -314,6 +316,12 @@ class IntersectionAgent:
         
         return highest_qvalue
 
+        # features = state.extract_features("UNUSED")
+        # value = 0
+        # for f in features:
+        #     value += features[f]*self.weights[f]
+
+        # return value
 
     def reward(self, state, action):
 
@@ -329,12 +337,20 @@ class IntersectionAgent:
         next_state = self.state.state_copy()
 
         cars_passed, temp_pass_car_list = next_state.update_intersection_state(action,self.__time)
-        next_state.update_time(self.__time + self.TIME_INTERVAL)
+        if action == 'straight_ns' or action == 'straight_ew':
+            next_state.update_time(self.__time + self.STRAIGHT_TIME_INTERVAL)
+        else:
+            next_state.update_time(self.__time + self.LEFT_TIME_INTERVAL)
         feature = next_state.extract_features(action)
 
         reward = max_lane * cars_passed 
         return (reward, next_state)
 
+    def generator_test_weights(self):
+        self.weights = {'straight_ns': 13.364490640765416, 
+                        'straight_ew': 39.7475246716086, 
+                        'left_ns': 98.23941235499537, 
+                        'left_ew': 847.6506358018852}
 
     def update_weight(self, state, action, next_state, reward):
         """ YOUR CODE HERE"""
@@ -347,14 +363,18 @@ class IntersectionAgent:
         for f in features:
             self.weights[f] += self.alpha*diff*features[f]
             sum_weight += self.weights[f]
+
         for f in features:
-            self.weights[f] /= sum_weight * 0.01 
+            self.weights[f] /= sum_weight * 0.001
 
     def update_state(self, action):
         # update state
         # Add waiting time to each car still waiting
         temp_time = self.__time
-        self.__time += self.TIME_INTERVAL
+        if action == 'straight_ns' or action == 'straight_ew':
+            self.__time += self.STRAIGHT_TIME_INTERVAL
+        else:
+            self.__time += self.LEFT_TIME_INTERVAL
         self.add_car_from_buffer_to_waiting()
         passed_cars , temp_pass_car_list = self.state.update_intersection_state(action,temp_time)
         self.state.update_time(self.__time)
@@ -384,6 +404,9 @@ class IntersectionAgent:
         # for f in self.weights:
         #     self.weights[f] = -self.weights[f]
             
+        for f in self.weights:
+            self.weights[f] = abs(self.weights[f])
+
         while (not self.all_cars_passed()) or (self.buffer_car_list != []):
             
             # print("time : ",self.__time)
