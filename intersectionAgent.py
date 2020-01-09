@@ -307,11 +307,11 @@ class IntersectionAgent:
     def get_value(self, state):
         lights_choices = self.get_legal_action()
 
-        highest_qvalue = -float('inf')
+        highest_qvalue = float('inf')
         for a in lights_choices:
             qvalue = self.get_qvalue(state, a)
             
-            if qvalue > highest_qvalue:
+            if qvalue < highest_qvalue:
                 highest_qvalue = qvalue
         
         return highest_qvalue
@@ -426,6 +426,8 @@ class IntersectionAgent:
         avg_waiting_time = float(total_waiting_time / cars_passed)
         print(cars_passed)
         print("Our model: avg wait time: ", avg_waiting_time)
+        
+        return avg_waiting_time
         # return avg_waiting_time
     
     # Return average time using a period traffic light scheme
@@ -452,5 +454,6 @@ class IntersectionAgent:
 
         avg_waiting_time = float(total_waiting_time / cars_passed)
         print("Stupid: avg wait time: ", avg_waiting_time)
+        return avg_waiting_time
         # return avg_waiting_time
 
